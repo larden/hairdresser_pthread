@@ -1,5 +1,5 @@
 CC=g++
-LDFLAGS=-lpthread
+LDFLAGS=-lpthread -lncurses
 FLAGS=-Wall
 SOURCES=main.cpp
 OBJECTS=$(SOURCES:.cpp=.o)

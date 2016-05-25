@@ -5,12 +5,57 @@
 
 using namespace std;
 
+void simulation_loop(char c)
+{
+    int in;
+
+    int x = 10, y = 10;
+
+    //Exit if user wish
+    if (c == 'q' || c == 'Q') return;
+    
+    //Endless loop
+    while (1) {
+        in = getch();
+        
+        switch (in) {
+            case KEY_LEFT:
+                mvaddch(x, y, '@');
+                x++; y++;
+                refresh();
+                break;
+            case 'q':
+            case 'Q':
+                return;
+            default:
+                break;
+        }
+    }
+
+}
+ 
 int main()
 {
-    initscr(); //Init ncurses
+    /* Init ncurses */
+    initscr(); 
+    clear();
+    noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    curs_set(0);
     
-    printw("Witaj Świecie!");
-    getch(); //wait for character
+    printw("Symulacja pracy zakladu fryzjerskiego v.01\nAutor: Jakub Lewalski\n\n\n");
+    printw("Akcje dostepne podczas symulacji:\n");
+    printw("k - dodanie nowego klienta\n");
+    printw("f - dodanie fryzjera (max 3)\n");
+    printw("q - wyjscie z programu\n");
+
+    auto a = getch(); //wait for character
+
+    //Clear window before simulation
+    clear();
+
+    simulation_loop(a);
 
     endwin(); //End ncurses
 

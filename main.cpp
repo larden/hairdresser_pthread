@@ -2,10 +2,11 @@
 #include <unistd.h>
 #include <thread>
 #include <mutex>
-#include <conditional_variable>
+#include <condition_variable>
 
 #include <ncurses.h>
 
+#define TEXT_H 2
 #define MAP_H 30
 #define MAP_W 100
 
@@ -17,77 +18,96 @@ struct MapField {
 };
 
 struct Map {
-	
-	MapField mapFieldsp[MAP_H][MAP_W];
+	int x, y;
+
+	MapField mapFields[MAP_H][MAP_W];
 
 	void initMap() {
-		for (int i = )
+		for (int i = TEXT_H; i < MAP_H; i++) {
+			for (int j = 0; j < MAP_W; j++) {
+				mapFields[i][j].sign = " ";
+			}
+		}
 	}
 
-	Map() {}	
+	void writeText(int x, int y, string text) {
+		for (int i = x, j=0; j < text.length(); i++, j++)
+			mapFields[y][i].sign = text.at(j);
+	}
+
+	Map() {}
+	
+	void start() {
+		initMap();
+		printMap();
+	}
 
 	void printMap() {
 		clear();
 		//start_color();
 		//init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
 		//init_pair(2, COLOR_WHITE, COLOR_BLACK);
-		getmaxyx(stdcsr, y, x);
-		if ()
-		
+		getmaxyx(stdscr, y, x);
+		if (x >= MAP_W && y >= MAP_H) {
+			for (int i=0; i<MAP_H; i++) {
+				for (int j=0; j<MAP_W; j++) {
+					mvprintw(i, j, mapFields[i][j].sign.c_str());
+				}
+			}
+		} else {
+			const char warning[] = "Warning! Window is too small!";
+			mvprintw(y/2, (x/2) - (sizeof(warning)/2), warning);
+		}
+		refresh();
 	}
 
 	void refreshMap() {
 		refresh();
 	}
 };
-void fryzjer()
-{}
 
-void klient()
-{}
+/****************************************************************************************************/
+/****************************************************************************************************/
 
-void run_klient()
-{}
+Map map;
 
 void simulation_loop(char c)
 {
-    int in;
+	int in;
 
-    int x = 10, y = 10;
 
-    //Exit if user wish
-    if (c == 'q' || c == 'Q') return;
-    
-    //Endless loop
-    while (1) {
-        in = getch();
-        
-        switch (in) {
-            case KEY_LEFT:
-                mvaddch(x, y, '@');
-                x++; y++;
-                refresh();
-                break;
-            case 'q':
-            case 'Q':
-                return;
-            default:
-                break;
+	//Exit if user wish
+	if (c == 'q' || c == 'Q') return;
+
+	map.start();
+
+	//Endless loop
+	while (1) {
+		in = getch();
+
+		switch (in) {
+		case KEY_LEFT:
+			break;
+		case 'q':
+		case 'Q':
+			return;
+		default:
+			break;
         }
     }
 
 }
- 
+
 int main()
 {
     /* Init ncurses */
-    initscr(); 
+    initscr();
     clear();
     noecho();
     cbreak();
     keypad(stdscr, TRUE);
     curs_set(0);
-    
+
     printw("Symulacja pracy zakladu fryzjerskiego v.01\nAutor: Jakub Lewalski\n\n\n");
     printw("Akcje dostepne podczas symulacji:\n");
     printw("k - dodanie nowego klienta\n");

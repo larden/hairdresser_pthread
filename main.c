@@ -5,6 +5,15 @@
 
 using namespace std;
 
+void fryzjer()
+{}
+
+void klient()
+{}
+
+void run_klient()
+{}
+
 void simulation_loop(char c)
 {
     int in;
@@ -50,7 +59,7 @@ int main()
     printw("f - dodanie fryzjera (max 3)\n");
     printw("q - wyjscie z programu\n");
 
-    auto a = getch(); //wait for character
+    char a = getch(); //wait for character
 
     //Clear window before simulation
     clear();

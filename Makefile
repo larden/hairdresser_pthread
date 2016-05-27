@@ -1,8 +1,8 @@
 CC=g++
 LDFLAGS=-lpthread -lncurses
 FLAGS=-Wall
-SOURCES=main.cpp
-OBJECTS=$(SOURCES:.cpp=.o)
+SOURCES=main.c
+OBJECTS=$(SOURCES:.c=.o)
 TARGET=fryzjer
 
 all: $(SOURCES) $(TARGET)
@@ -10,7 +10,7 @@ all: $(SOURCES) $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
-.cpp.o:
+.c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

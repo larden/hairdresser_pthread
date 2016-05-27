@@ -1,10 +1,45 @@
 #include <iostream>
-#include <cstdlib>
-#include <pthread.h>
+#include <unistd.h>
+#include <thread>
+#include <mutex>
+#include <conditional_variable>
+
 #include <ncurses.h>
+
+#define MAP_H 30
+#define MAP_W 100
 
 using namespace std;
 
+struct MapField {
+	string sign;
+	string color;
+};
+
+struct Map {
+	
+	MapField mapFieldsp[MAP_H][MAP_W];
+
+	void initMap() {
+		for (int i = )
+	}
+
+	Map() {}	
+
+	void printMap() {
+		clear();
+		//start_color();
+		//init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
+		//init_pair(2, COLOR_WHITE, COLOR_BLACK);
+		getmaxyx(stdcsr, y, x);
+		if ()
+		
+	}
+
+	void refreshMap() {
+		refresh();
+	}
+};
 void fryzjer()
 {}
 

@@ -3,7 +3,10 @@
 #include <mutex>
 #include <chrono>
 #include <vector>
+#include <queue>
+#include <condition_variable>
 #include <ncurses.h>
+
 
 class Fryzjer {
 public:
@@ -19,6 +22,8 @@ public:
         }
 
 private:
+	Kolejka _queue;
+	Client client;
         std::thread the_thread;
         bool stop_thread = false;
         int _i;
@@ -44,6 +49,7 @@ public:
         }
 
 private:
+	Kolejka _queue;
         std::thread the_thread;
         bool stop_thread = false;
         int _i;
@@ -54,6 +60,54 @@ private:
                 }
         }
 };
+
+class Client {
+public:
+	Client(int i) : gold(i) {};
+	int gold;
+};
+
+template <typename T>
+class Queue {
+public:
+	T pop() {
+		std::unique_lock<std::mutex> m(_m);
+		while (_q.empty()) {
+			_cv.wait(m);
+		}
+		auto klient = _q.front();
+		_q.pop();
+		return klient;
+	}
+	void pop(T& klient) {
+		std::unique_lock<std::mutex> m(_m);
+		while (_q.empty()) {
+			_cv.wait(m);
+		}
+		klient = _q.front();
+		_q.pop();
+	}
+	
+	void push(const T& klient) {
+		std::unique_lock<std::mutex> m(_m);
+		_q.push(klient);
+		m.unlock();
+		_cv.notify_one();
+	}
+	
+	void push(T&& klient) {
+		std::unique_lock<std::mutex> m(_m);
+		_q.push(std::move(klient));
+		m.unlock();
+		_cv.notify_one();
+	}
+private:
+	std::mutex _m;
+	std::queue<T> _q;
+	std::condition_variable _cv;
+};
+
+Queue<Client> kolejka;
 
 void simulation_loop(char c)
 {
@@ -82,6 +136,10 @@ void simulation_loop(char c)
                         v.back()->Start();
                         std::cout << "Wystartował: " << i-1 << "\n\r";
                         break;
+		case 'k':
+			kolejka.push(Klient(i));
+			std::cout << "Dodałem nowego klienta do kolejki" << "\n\r";
+			break;
                 case 'q':
                 case 'Q':
                         return;

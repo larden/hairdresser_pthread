@@ -30,6 +30,31 @@ private:
         }
 };
 
+class Barber {
+public:
+        Barber(int i) : the_thread(), _i(i) {}
+        ~Barber() {
+                stop_thread = true;
+                if (the_thread.joinable()) the_thread.join();
+                std::cout << "End of Barber object\n";
+        }
+
+        void Start() {
+                the_thread = std::thread(&Barber::Action, this);
+        }
+
+private:
+        std::thread the_thread;
+        bool stop_thread = false;
+        int _i;
+        void Action() {
+                while (!stop_thread) {
+                        std::cout << "Barber: Wysylamy jakies gowno ["<< _i << "]\n\r";
+                        std::this_thread::sleep_for( std::chrono::seconds(1) );
+                }
+        }
+};
+
 void simulation_loop(char c)
 {
         int in;

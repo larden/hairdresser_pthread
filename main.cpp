@@ -8,11 +8,20 @@
 #include <unistd.h>
 #include <ncurses.h>
 
-#define QUEUE_LIMIT 20
+
+#define QUEUE_LIMIT 18
+
+#define F_X	5
+#define F_Y	10
+#define B_X	15
+#define B_Y	10
+
 #define SCI_X	9
 #define SCI_Y	11
 #define COMB_X	11
 #define COMB_Y	11
+#define KASA_X	20
+#define KASA_Y	5
 
 struct Client {
 	int gold;
@@ -81,9 +90,19 @@ struct Comb {
 	Comb(int posy, int posx) : y(posy), x(posx) {}
 };
 
+struct Kasa {
+	int y;
+	int x;
+	int value;
+	std::mutex m;
+
+	Kasa(int posy, int posx) : y(posy), x(posx), value(0) {}
+};
+
 class Fryzjer {
 public:
-        Fryzjer(int y, int x, Queue<Client> &queue, Scissors &scissors, Comb &comb) : the_thread(), _y(y), _x(x), _queue(queue), _sci(scissors), _comb(comb), client(0) {
+        Fryzjer(int y, int x, Queue<Client> &queue, Scissors &scissors, Comb &comb, Kasa &kasa)
+		: the_thread(), _y(y), _x(x), _queue(queue), _sci(scissors), _comb(comb), _kasa(kasa), client(0) {
 	}
         ~Fryzjer() {
                 stop_thread = true;
@@ -111,6 +130,7 @@ private:
 	Queue<Client> &_queue;
 	Scissors &_sci;
 	Comb &_comb;
+	Kasa &_kasa;
 
 	Client client;
 
@@ -123,6 +143,8 @@ private:
 
 			_has_client = _queue.pop(client);
 			if (!_has_client) continue;
+
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 
 			//strzyzenie nozyczkami i grzebieniem
 			{
@@ -141,6 +163,8 @@ private:
 				_comb.y = COMB_Y;
 			}
 
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+
 			//czesanie grzebieniem
 			{
 				std::unique_lock<std::mutex> l_comb {_comb.m};
@@ -152,14 +176,29 @@ private:
 				_comb.y = COMB_Y;
 			}
 
-			_has_client = false;
+			//idziemy do kasy
+			{
+				std::unique_lock<std::mutex> l_kasa {_kasa.m};
+
+				_y = _kasa.y+1;
+				_x = _kasa.x-1;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_kasa.value += 50;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_has_client = false;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_y = F_Y;
+				_x = F_X;
+			}
+			std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
         }
 };
 
 class Barber {
 public:
-        Barber(int y, int x, Queue<Client> &queue, Scissors &scissors, Comb &comb) : the_thread(), _y(y), _x(x), _queue(queue), _sci(scissors), _comb(comb), client(0) {}
+        Barber(int y, int x, Queue<Client> &queue, Scissors &scissors, Comb &comb, Kasa &kasa)
+		: the_thread(), _y(y), _x(x), _queue(queue), _sci(scissors), _comb(comb), _kasa(kasa), client(0) {}
         ~Barber() {
                 stop_thread = true;
                 if (the_thread.joinable()) the_thread.join();
@@ -186,6 +225,7 @@ private:
 	Queue<Client> &_queue;
 	Scissors &_sci;
 	Comb &_comb;
+	Kasa &_kasa;
 
 	Client client;
 
@@ -199,16 +239,55 @@ private:
 			_has_client = _queue.pop(client);
 			if(!_has_client) continue;
 
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 
-			std::this_thread::sleep_for( std::chrono::seconds(3) );
-			_has_client = false;
+			//scinanie nozyczkami
+			{
+				std::unique_lock<std::mutex> l_sci {_sci.m};
+
+				_sci.x = _x + 1;
+				_sci.y = _y;
+				std::this_thread::sleep_for(std::chrono::seconds(4));
+				_sci.x = SCI_X;
+				_sci.y = SCI_Y;
+			}
+
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			//czesanie grzebieniem
+			{
+				std::unique_lock<std::mutex> l_comb {_comb.m};
+
+				_comb.x = _x + 1;
+				_comb.y = _y;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_comb.x = COMB_X;
+				_comb.y = COMB_Y;
+			}
+
+			//idziemy do kasy
+			{
+				std::unique_lock<std::mutex> l_kasa {_kasa.m};
+
+				_y = _kasa.y+1;
+				_x = _kasa.x-1;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_kasa.value += 100;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_has_client = false;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				_y = B_Y;
+				_x = B_X;
+			}
+
+			std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
         }
 };
 
 class Map {
 public:
-        Map(Queue<Client> &queue, Fryzjer &f, Barber &b,Scissors &scissors, Comb &comb) : the_thread(), _queue(queue), _f(f), _b(b), _sci(scissors), _comb(comb) {}
+        Map(Queue<Client> &queue, Fryzjer &f, Barber &b,Scissors &scissors, Comb &comb, Kasa &kasa)
+		: the_thread(), _queue(queue), _f(f), _b(b), _sci(scissors), _comb(comb), _kasa(kasa) {}
         ~Map() {
                 stop_thread = true;
                 if (the_thread.joinable()) the_thread.join();
@@ -231,6 +310,7 @@ private:
 	Barber &_b;
 	Scissors &_sci;
 	Comb &_comb;
+	Kasa &_kasa;
 
 	const char *s_klient = "K";
 	const char *s_puste = "_";
@@ -243,7 +323,6 @@ private:
 
         bool stop_thread = false;
         void Draw() {
-		int x, y;
                 while (!stop_thread) {
 
 			clear();
@@ -253,18 +332,26 @@ private:
 			init_pair(3, COLOR_YELLOW, COLOR_BLACK);
 			init_pair(4, COLOR_RED, COLOR_BLACK);
 			init_pair(5, COLOR_BLUE, COLOR_BLACK);
+			init_pair(6, COLOR_GREEN, COLOR_BLACK);
 
-			x = 20;
-			y = 1;
 
 			//Wyswietlenie kolejki
 			mvprintw(0, 0, "%s", "SYMULACJA ZAKLADU FRYZJERSKIEGO");
+			mvprintw(1, 0, "%s", "Autor: Jakub Lewalski 195419");
+			mvprintw(3, 33, "%s", "Legenda:");
+			mvprintw(4, 33, "%s", "F - Fryzjer");
+			mvprintw(5, 33, "%s", "B - Barber");
+			mvprintw(6, 33, "%s", "K - Klient");
+			mvprintw(7, 33, "%s", "$ - Kasa");
+			mvprintw(8, 33, "%s", "X - Nozyczki");
+			mvprintw(9, 33, "%s", "E - Grzebien");
+
 			for (int i = QUEUE_LIMIT; i > 0; i--) {
 				attron(COLOR_PAIR(4));
 				if ((QUEUE_LIMIT - i) < _queue.size())
-					mvprintw(y, i, s_klient);
+					mvprintw(2, i, s_klient);
 				else
-					mvprintw(y, i, s_puste);
+					mvprintw(2, i, s_puste);
 				attroff(COLOR_PAIR(4));
 			}
 
@@ -276,7 +363,7 @@ private:
 
 			//lewa strona fotela
 			attron(COLOR_PAIR(1));
-			mvprintw(_f.getY()-1, _f.getX()-1, s_fotel);
+			mvprintw(F_Y-1, F_X-1, s_fotel);
 			attroff(COLOR_PAIR(1));
 
 			//klient
@@ -292,19 +379,19 @@ private:
 
 			//prawa strona fotela
 			attron(COLOR_PAIR(1));
-			mvprintw(_f.getY()-1, _f.getX()+1, s_fotel);
+			mvprintw(F_Y-1, F_X+1, s_fotel);
 			attroff(COLOR_PAIR(1));
 			/*******************************/
 
 			/*******************************/
-			//Stanowisko Barberskie - Barber
+			// Barber
 			attron(COLOR_PAIR(3));
 			mvprintw(_b.getY(), _b.getX(), s_barber);
 			attroff(COLOR_PAIR(3));
 
 			//lewa strona fotela
 			attron(COLOR_PAIR(1));
-			mvprintw(_b.getY()-1, _b.getX()-1, s_fotel);
+			mvprintw(B_Y-1, B_X-1, s_fotel);
 			attroff(COLOR_PAIR(1));
 
 			//klient
@@ -320,7 +407,7 @@ private:
 
 			//prawa strona fotela
 			attron(COLOR_PAIR(1));
-			mvprintw(_b.getY()-1, _b.getX()+1, s_fotel);
+			mvprintw(B_Y-1, B_X+1, s_fotel);
 			attroff(COLOR_PAIR(1));
 			/*****************************/
 
@@ -329,6 +416,11 @@ private:
 			mvprintw(_sci.y, _sci.x, s_sci);
 			mvprintw(_comb.y, _comb.x, s_comb);
 			attroff(COLOR_PAIR(5));
+
+			attron(COLOR_PAIR(6));
+			mvprintw(_kasa.y, _kasa.x, s_kasa);
+			mvprintw(_kasa.y, _kasa.x+2, "%d$", _kasa.value);
+			attroff(COLOR_PAIR(6));
 
 
 			refresh();
@@ -340,9 +432,10 @@ private:
 Queue<Client> kolejka;
 Scissors sci(11,9);
 Comb comb(11,11);
+Kasa kasa(5, 20);
 
-Fryzjer v(10, 5, kolejka, sci, comb);
-Barber  b(10, 15, kolejka, sci, comb);
+Fryzjer v(F_Y, F_X, kolejka, sci, comb, kasa);
+Barber  b(B_Y, B_X, kolejka, sci, comb, kasa);
 Map *map;
 
 void simulation_loop(char c)
@@ -355,7 +448,7 @@ void simulation_loop(char c)
 	v.Start();
 	b.Start();
 
-	map = new Map(kolejka, v, b, sci, comb);
+	map = new Map(kolejka, v, b, sci, comb, kasa);
 	map->Start();
 	int klient_id = 1;
         //Endless loop
@@ -396,7 +489,6 @@ int main()
         printw("Symulacja pracy zakladu fryzjerskiego v.01\nAutor: Jakub Lewalski\n\n\n");
         printw("Akcje dostepne podczas symulacji:\n");
         printw("k - dodanie nowego klienta\n");
-        printw("f - dodanie fryzjera (max 3)\n");
         printw("q - wyjscie z programu\n");
 
         auto a = getch(); //wait for character
